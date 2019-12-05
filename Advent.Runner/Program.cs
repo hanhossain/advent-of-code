@@ -9,7 +9,7 @@ namespace Advent.Runner
     {
         static void Main(string[] args)
         {
-            Day02Part1();
+            Day02Part2();
         }
 
         private static void Day01Part1()
@@ -31,6 +31,23 @@ namespace Advent.Runner
             program[2] = 2;
             Day02.RunIntcodeProgram(program);
             Console.WriteLine(program[0]);
+        }
+
+        private static void Day02Part2()
+        {
+            var code = File.ReadAllText("Data/Day02.txt");
+            
+            for (int noun = 0; noun < 100; noun++)
+            {
+                for (int verb = 0; verb < 100; verb++)
+                {
+                    if (Day02.RunIntcodeProgram(code, noun, verb) == 19690720)
+                    {
+                        Console.WriteLine(100 * noun + verb);
+                        return;
+                    }
+                }
+            }
         }
     }
 }

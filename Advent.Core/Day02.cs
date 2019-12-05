@@ -30,5 +30,15 @@ namespace Advent.Core
                 offset += 4;
             }
         }
+
+        public static int RunIntcodeProgram(string code, int input1, int input2)
+        {
+            int[] program = code.Split(",").Select(x => int.Parse(x)).ToArray();
+            program[1] = input1;
+            program[2] = input2;
+
+            RunIntcodeProgram(program);
+            return program[0];
+        }
     }
 }
