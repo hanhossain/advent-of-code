@@ -2,17 +2,14 @@ use std::collections::HashSet;
 use std::fs;
 
 pub fn run_part1() {
-    let trails = read_file();
-    let trail1 = &trails[0];
-    let trail2 = &trails[1];
-    let distance = get_distance(trail1, trail2);
+    let raw = read_file();
+    let distance = calculate_distance(&raw);
     println!("Distance: {}", distance);
 }
 
-fn read_file() -> Vec<Trail> {
+fn read_file() -> String {
     let filepath = "/Users/hanhossain/Developer/advent-of-code/data/Day03.txt";
-    let s = fs::read_to_string(filepath).unwrap();
-    parse(&s)
+    fs::read_to_string(filepath).unwrap()
 }
 
 fn parse(s: &str) -> Vec<Trail> {
@@ -29,7 +26,11 @@ fn parse(s: &str) -> Vec<Trail> {
         .collect()
 }
 
-fn get_distance(trail1: &Trail, trail2: &Trail) -> i32 {
+fn calculate_distance(s: &str) -> i32 {
+    let trails = parse(s);
+    let trail1 = &trails[0];
+    let trail2 = &trails[1];
+
     trail1
         .coordinates
         .intersection(&trail2.coordinates)
@@ -117,24 +118,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_distance1() {
+    fn test_calculate_distance1() {
+        let raw = r#"R8,U5,L5,D3
+U7,R6,D4,L4"#;
+        let distance = calculate_distance(raw);
+        assert_eq!(distance, 6);
+    }
+
+    #[test]
+    fn test_calculate_distance2() {
         let raw = r#"R75,D30,R83,U83,L12,D49,R71,U7,L72
 U62,R66,U55,R34,D71,R55,D58,R83"#;
-        let trails = parse(raw);
-        let trail1 = &trails[0];
-        let trail2 = &trails[1];
-        let distance = get_distance(trail1, trail2);
+        let distance = calculate_distance(raw);
         assert_eq!(distance, 159);
     }
 
     #[test]
-    fn test_get_distance2() {
+    fn test_calculate_distance3() {
         let raw = r#"R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
 U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"#;
-        let trails = parse(raw);
-        let trail1 = &trails[0];
-        let trail2 = &trails[1];
-        let distance = get_distance(trail1, trail2);
+        let distance = calculate_distance(raw);
         assert_eq!(distance, 135);
     }
 }
