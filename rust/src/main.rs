@@ -7,5 +7,5 @@ mod day04;
 mod vm;
 
 fn main() {
-    day04::run_part1();
+    day04::run_part2();
 }
