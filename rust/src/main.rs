@@ -3,8 +3,9 @@
 mod day01;
 mod day02;
 mod day03;
+mod day04;
 mod vm;
 
 fn main() {
-    day03::run_part2();
+    day04::run_part1();
 }
