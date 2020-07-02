@@ -1,3 +1,5 @@
+use std::io;
+
 pub struct Intcode<'a> {
     memory: &'a mut [i32],
     instruction_pointer: usize,
@@ -34,6 +36,27 @@ impl<'a> Intcode<'a> {
                         panic!("Cannot write to an immediate parameter");
                     }
                 }
+                Instruction::Input(location) => {
+                    println!("Input: ");
+
+                    let mut buffer = String::new();
+                    io::stdin().read_line(&mut buffer).unwrap();
+
+                    let input: i32 = buffer.trim().parse().unwrap();
+                    if let Parameter::Position(location) = location {
+                        unsafe {
+                            *location = input;
+                        }
+                    } else {
+                        panic!("Cannot write to an immediate parameter");
+                    }
+
+                    self.instruction_pointer += 2;
+                }
+                Instruction::Output(location) => {
+                    println!("{}", location.load());
+                    self.instruction_pointer += 2;
+                }
                 Instruction::Halt => break,
             }
         }
@@ -43,6 +66,8 @@ impl<'a> Intcode<'a> {
 enum Instruction {
     Add(Parameter, Parameter, Parameter),
     Multiply(Parameter, Parameter, Parameter),
+    Input(Parameter),
+    Output(Parameter),
     Halt,
 }
 
@@ -65,6 +90,14 @@ impl Instruction {
                 let param3 = Parameter::get3(memory, address);
 
                 Instruction::Multiply(param1, param2, param3)
+            }
+            3 => {
+                let param = Parameter::get1(memory, address);
+                Instruction::Input(param)
+            }
+            4 => {
+                let param = Parameter::get1(memory, address);
+                Instruction::Output(param)
             }
             99 => Instruction::Halt,
             _ => todo!(),
