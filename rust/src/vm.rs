@@ -14,41 +14,107 @@ impl<'a> Intcode<'a> {
     pub fn run(&mut self) {
         loop {
             match Instruction::read(&mut self.memory, self.instruction_pointer) {
-                Instruction::Add(operand1, operand2, location) => {
-                    *location = operand1 + operand2;
+                Instruction::Add(param1, param2, param3) => {
+                    if let Parameter::Position(location) = param3 {
+                        unsafe {
+                            *location = param1.load() + param2.load();
+                        }
+                        self.instruction_pointer += 4;
+                    } else {
+                        panic!("Cannot write to an immediate parameter");
+                    }
                 }
-                Instruction::Multiply(operand1, operand2, location) => {
-                    *location = operand1 * operand2
+                Instruction::Multiply(param1, param2, param3) => {
+                    if let Parameter::Position(location) = param3 {
+                        unsafe {
+                            *location = param1.load() * param2.load();
+                        }
+                        self.instruction_pointer += 4;
+                    } else {
+                        panic!("Cannot write to an immediate parameter");
+                    }
                 }
                 Instruction::Halt => break,
             }
-
-            self.instruction_pointer += 4;
         }
     }
 }
 
-enum Instruction<'a> {
-    Add(i32, i32, &'a mut i32),
-    Multiply(i32, i32, &'a mut i32),
+enum Instruction {
+    Add(Parameter, Parameter, Parameter),
+    Multiply(Parameter, Parameter, Parameter),
     Halt,
 }
 
-impl<'a> Instruction<'a> {
-    fn read(memory: &'a mut [i32], address: usize) -> Self {
-        match memory[address] {
-            1 => Instruction::Add(
-                memory[memory[address + 1] as usize],
-                memory[memory[address + 2] as usize],
-                &mut memory[memory[address + 3] as usize],
-            ),
-            2 => Instruction::Multiply(
-                memory[memory[address + 1] as usize],
-                memory[memory[address + 2] as usize],
-                &mut memory[memory[address + 3] as usize],
-            ),
+impl Instruction {
+    fn read(memory: &mut [i32], address: usize) -> Self {
+        let mem = memory[address];
+        let opcode = mem % 100;
+
+        match opcode {
+            1 => {
+                let param1 = Parameter::get1(memory, address);
+                let param2 = Parameter::get2(memory, address);
+                let param3 = Parameter::get3(memory, address);
+
+                Instruction::Add(param1, param2, param3)
+            }
+            2 => {
+                let param1 = Parameter::get1(memory, address);
+                let param2 = Parameter::get2(memory, address);
+                let param3 = Parameter::get3(memory, address);
+
+                Instruction::Multiply(param1, param2, param3)
+            }
             99 => Instruction::Halt,
             _ => todo!(),
+        }
+    }
+}
+
+enum Parameter {
+    Position(*mut i32),
+    Immediate(i32),
+}
+
+impl Parameter {
+    fn get1(memory: &mut [i32], address: usize) -> Self {
+        let mode = (memory[address] / 100) % 10;
+        let param = memory[address + 1];
+
+        if mode == 0 {
+            Parameter::Position(&mut memory[param as usize] as *mut i32)
+        } else {
+            Parameter::Immediate(param)
+        }
+    }
+
+    fn get2(memory: &mut [i32], address: usize) -> Self {
+        let mode = (memory[address] / 1_000) % 10;
+        let param = memory[address + 2];
+
+        if mode == 0 {
+            Parameter::Position(&mut memory[param as usize] as *mut i32)
+        } else {
+            Parameter::Immediate(param)
+        }
+    }
+
+    fn get3(memory: &mut [i32], address: usize) -> Self {
+        let mode = (memory[address] / 10_000) % 10;
+        let param = memory[address + 3];
+
+        if mode == 0 {
+            Parameter::Position(&mut memory[param as usize] as *mut i32)
+        } else {
+            Parameter::Immediate(param)
+        }
+    }
+
+    fn load(&self) -> i32 {
+        match self {
+            Parameter::Position(x) => unsafe { **x },
+            Parameter::Immediate(x) => *x,
         }
     }
 }
@@ -66,6 +132,14 @@ mod tests {
     }
 
     #[test]
+    fn run_add_immediate() {
+        let mut memory = [1101, 100, -1, 4, 0];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [1101, 100, -1, 4, 99])
+    }
+
+    #[test]
     fn run_multiply() {
         let mut memory = [2, 3, 0, 3, 99];
         let mut intcode = Intcode::new(&mut memory);
@@ -79,6 +153,14 @@ mod tests {
         let mut intcode = Intcode::new(&mut memory);
         intcode.run();
         assert_eq!(memory, [2, 4, 4, 5, 99, 9801]);
+    }
+
+    #[test]
+    fn run_multiply_immediate() {
+        let mut memory = [1102, 2, 4, 0, 99];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [8, 2, 4, 0, 99]);
     }
 
     #[test]
