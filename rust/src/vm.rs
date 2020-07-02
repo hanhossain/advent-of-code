@@ -65,6 +65,14 @@ impl<'a> Intcode<'a> {
                         self.instruction_pointer += 3;
                     }
                 }
+                Instruction::JumpIfFalse(condition, label) => {
+                    let condition = condition.load();
+                    if condition == 0 {
+                        self.instruction_pointer = label.load() as usize;
+                    } else {
+                        self.instruction_pointer += 3;
+                    }
+                }
                 Instruction::Halt => break,
             }
         }
@@ -77,6 +85,7 @@ enum Instruction {
     Input(Parameter),
     Output(Parameter),
     JumpIfTrue(Parameter, Parameter),
+    JumpIfFalse(Parameter, Parameter),
     Halt,
 }
 
@@ -112,6 +121,11 @@ impl Instruction {
                 let param1 = Parameter::get1(memory, address);
                 let param2 = Parameter::get2(memory, address);
                 Instruction::JumpIfTrue(param1, param2)
+            }
+            6 => {
+                let param1 = Parameter::get1(memory, address);
+                let param2 = Parameter::get2(memory, address);
+                Instruction::JumpIfFalse(param1, param2)
             }
             99 => Instruction::Halt,
             _ => todo!(),
@@ -248,5 +262,37 @@ mod tests {
         let mut intcode = Intcode::new(&mut memory);
         intcode.run();
         assert_eq!(memory, [3, 0, 7, 1101, 1, 2, 0, 99]);
+    }
+
+    #[test]
+    fn run_jump_if_false_position_succeeds() {
+        let mut memory = [6, 3, 4, 0, 5, 99];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [6, 3, 4, 0, 5, 99]);
+    }
+
+    #[test]
+    fn run_jump_if_false_position_fails() {
+        let mut memory = [6, 0, 1, 1, 1, 2, 0, 99];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [1, 0, 1, 1, 1, 2, 0, 99]);
+    }
+
+    #[test]
+    fn run_jump_if_false_immediate_succeeds() {
+        let mut memory = [1106, 0, 7, 1101, 1, 2, 0, 99];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [1106, 0, 7, 1101, 1, 2, 0, 99]);
+    }
+
+    #[test]
+    fn run_jump_if_false_immediate_fails() {
+        let mut memory = [1106, 1, 7, 1101, 1, 2, 0, 99];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [3, 1, 7, 1101, 1, 2, 0, 99]);
     }
 }
