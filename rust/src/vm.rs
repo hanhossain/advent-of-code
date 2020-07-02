@@ -1,11 +1,14 @@
-pub struct Intcode<'a>{
+pub struct Intcode<'a> {
     memory: &'a mut [i32],
     instruction_pointer: usize,
 }
 
 impl<'a> Intcode<'a> {
     pub fn new(memory: &'a mut [i32]) -> Self {
-        Intcode { memory, instruction_pointer: 0 }
+        Intcode {
+            memory,
+            instruction_pointer: 0,
+        }
     }
 
     pub fn run(&mut self) {
@@ -34,10 +37,18 @@ enum Instruction<'a> {
 impl<'a> Instruction<'a> {
     fn read(memory: &'a mut [i32], address: usize) -> Self {
         match memory[address] {
-            1 => Instruction::Add(memory[memory[address + 1] as usize], memory[memory[address + 2] as usize], &mut memory[memory[address + 3] as usize]),
-            2 => Instruction::Multiply(memory[memory[address + 1] as usize], memory[memory[address + 2] as usize], &mut memory[memory[address + 3] as usize]),
+            1 => Instruction::Add(
+                memory[memory[address + 1] as usize],
+                memory[memory[address + 2] as usize],
+                &mut memory[memory[address + 3] as usize],
+            ),
+            2 => Instruction::Multiply(
+                memory[memory[address + 1] as usize],
+                memory[memory[address + 2] as usize],
+                &mut memory[memory[address + 3] as usize],
+            ),
             99 => Instruction::Halt,
-            _ => todo!()
+            _ => todo!(),
         }
     }
 }
