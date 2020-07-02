@@ -87,6 +87,20 @@ impl<'a> Intcode<'a> {
 
                     self.instruction_pointer += 4;
                 }
+                Instruction::Equals(left, right, location) => {
+                    let left = left.load();
+                    let right = right.load();
+
+                    if let Parameter::Position(location) = location {
+                        unsafe {
+                            *location = if left == right { 1 } else { 0 };
+                        }
+                    } else {
+                        panic!("Cannot write to an immediate parameter");
+                    }
+
+                    self.instruction_pointer += 4;
+                }
                 Instruction::Halt => break,
             }
         }
@@ -101,6 +115,7 @@ enum Instruction {
     JumpIfTrue(Parameter, Parameter),
     JumpIfFalse(Parameter, Parameter),
     LessThan(Parameter, Parameter, Parameter),
+    Equals(Parameter, Parameter, Parameter),
     Halt,
 }
 
@@ -148,6 +163,13 @@ impl Instruction {
                 let param3 = Parameter::get3(memory, address);
 
                 Instruction::LessThan(param1, param2, param3)
+            }
+            8 => {
+                let param1 = Parameter::get1(memory, address);
+                let param2 = Parameter::get2(memory, address);
+                let param3 = Parameter::get3(memory, address);
+
+                Instruction::Equals(param1, param2, param3)
             }
             99 => Instruction::Halt,
             _ => todo!(),
@@ -348,5 +370,37 @@ mod tests {
         let mut intcode = Intcode::new(&mut memory);
         intcode.run();
         assert_eq!(memory, [0, 2, 1, 0, 99]);
+    }
+
+    #[test]
+    fn run_equals_position_succeeds() {
+        let mut memory = [8, 0, 5, 3, 99, 8];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [8, 0, 5, 1, 99, 8]);
+    }
+
+    #[test]
+    fn run_equals_position_fails() {
+        let mut memory = [8, 0, 5, 3, 99, 9];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [8, 0, 5, 0, 99, 9]);
+    }
+
+    #[test]
+    fn run_equals_immediate_succeeds() {
+        let mut memory = [1108, 1, 1, 0, 99];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [1, 1, 1, 0, 99]);
+    }
+
+    #[test]
+    fn run_equals_immediate_fails() {
+        let mut memory = [1108, 1, 4, 0, 99];
+        let mut intcode = Intcode::new(&mut memory);
+        intcode.run();
+        assert_eq!(memory, [0, 1, 4, 0, 99]);
     }
 }
