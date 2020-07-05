@@ -1,3 +1,4 @@
+use std::fmt::{Display, Error, Formatter};
 use std::io;
 
 pub struct Intcode<'a> {
@@ -15,26 +16,16 @@ impl<'a> Intcode<'a> {
 
     pub fn run(&mut self) {
         loop {
-            match Instruction::read(&mut self.memory, self.instruction_pointer) {
+            let instruction = Instruction::read(&mut self.memory, self.instruction_pointer);
+            println!("{} - {}", self.instruction_pointer, instruction);
+            match instruction {
                 Instruction::Add(param1, param2, param3) => {
-                    if let Parameter::Position(location) = param3 {
-                        unsafe {
-                            *location = param1.load() + param2.load();
-                        }
-                        self.instruction_pointer += 4;
-                    } else {
-                        panic!("Cannot write to an immediate parameter");
-                    }
+                    param3.set(param1.load() + param2.load());
+                    self.instruction_pointer += 4;
                 }
                 Instruction::Multiply(param1, param2, param3) => {
-                    if let Parameter::Position(location) = param3 {
-                        unsafe {
-                            *location = param1.load() * param2.load();
-                        }
-                        self.instruction_pointer += 4;
-                    } else {
-                        panic!("Cannot write to an immediate parameter");
-                    }
+                    param3.set(param1.load() * param2.load());
+                    self.instruction_pointer += 4;
                 }
                 Instruction::Input(location) => {
                     println!("Input: ");
@@ -43,13 +34,7 @@ impl<'a> Intcode<'a> {
                     io::stdin().read_line(&mut buffer).unwrap();
 
                     let input: i32 = buffer.trim().parse().unwrap();
-                    if let Parameter::Position(location) = location {
-                        unsafe {
-                            *location = input;
-                        }
-                    } else {
-                        panic!("Cannot write to an immediate parameter");
-                    }
+                    location.set(input);
 
                     self.instruction_pointer += 2;
                 }
@@ -77,28 +62,14 @@ impl<'a> Intcode<'a> {
                     let left = left.load();
                     let right = right.load();
 
-                    if let Parameter::Position(location) = location {
-                        unsafe {
-                            *location = if left < right { 1 } else { 0 };
-                        }
-                    } else {
-                        panic!("Cannot write to an immediate parameter");
-                    }
-
+                    location.set(if left < right { 1 } else { 0 });
                     self.instruction_pointer += 4;
                 }
                 Instruction::Equals(left, right, location) => {
                     let left = left.load();
                     let right = right.load();
 
-                    if let Parameter::Position(location) = location {
-                        unsafe {
-                            *location = if left == right { 1 } else { 0 };
-                        }
-                    } else {
-                        panic!("Cannot write to an immediate parameter");
-                    }
-
+                    location.set(if left == right { 1 } else { 0 });
                     self.instruction_pointer += 4;
                 }
                 Instruction::Halt => break,
@@ -177,49 +148,83 @@ impl Instruction {
     }
 }
 
+impl Display for Instruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        match self {
+            Instruction::Add(x, y, z) => f.write_fmt(format_args!("Add {} {} {}", x, y, z)),
+            Instruction::Multiply(x, y, z) => {
+                f.write_fmt(format_args!("Multiply {} {} {}", x, y, z))
+            }
+            Instruction::Input(x) => f.write_fmt(format_args!("Input {}", x)),
+            Instruction::Output(x) => f.write_fmt(format_args!("Output {}", x)),
+            Instruction::JumpIfTrue(x, y) => f.write_fmt(format_args!("JumpIfTrue {} {}", x, y)),
+            Instruction::JumpIfFalse(x, y) => f.write_fmt(format_args!("JumpIfFalse {} {}", x, y)),
+            Instruction::LessThan(x, y, z) => {
+                f.write_fmt(format_args!("LessThan {} {} {}", x, y, z))
+            }
+            Instruction::Equals(x, y, z) => f.write_fmt(format_args!("Equals {} {} {}", x, y, z)),
+            Instruction::Halt => f.write_str("Halt"),
+        }
+    }
+}
+
 enum Parameter {
-    Position(*mut i32),
+    Position(i32, *mut [i32]),
     Immediate(i32),
 }
 
 impl Parameter {
-    fn get1(memory: &mut [i32], address: usize) -> Self {
+    fn get(memory: &mut [i32], mode: i32, param: i32) -> Self {
+        match mode {
+            0 => Parameter::Position(param, memory),
+            1 => Parameter::Immediate(param),
+            x => panic!("invalid parameter mode: {}", x),
+        }
+    }
+
+    fn get1(memory: *mut [i32], address: usize) -> Self {
+        let memory: &mut [i32] = unsafe { memory.as_mut().unwrap() };
         let mode = (memory[address] / 100) % 10;
         let param = memory[address + 1];
-
-        if mode == 0 {
-            Parameter::Position(&mut memory[param as usize] as *mut i32)
-        } else {
-            Parameter::Immediate(param)
-        }
+        Parameter::get(memory, mode, param)
     }
 
-    fn get2(memory: &mut [i32], address: usize) -> Self {
+    fn get2(memory: *mut [i32], address: usize) -> Self {
+        let memory: &mut [i32] = unsafe { memory.as_mut().unwrap() };
         let mode = (memory[address] / 1_000) % 10;
         let param = memory[address + 2];
-
-        if mode == 0 {
-            Parameter::Position(&mut memory[param as usize] as *mut i32)
-        } else {
-            Parameter::Immediate(param)
-        }
+        Parameter::get(memory, mode, param)
     }
 
-    fn get3(memory: &mut [i32], address: usize) -> Self {
+    fn get3(memory: *mut [i32], address: usize) -> Self {
+        let memory: &mut [i32] = unsafe { memory.as_mut().unwrap() };
         let mode = (memory[address] / 10_000) % 10;
         let param = memory[address + 3];
-
-        if mode == 0 {
-            Parameter::Position(&mut memory[param as usize] as *mut i32)
-        } else {
-            Parameter::Immediate(param)
-        }
+        Parameter::get(memory, mode, param)
     }
 
     fn load(&self) -> i32 {
         match self {
-            Parameter::Position(x) => unsafe { **x },
+            Parameter::Position(x, memory) => unsafe { memory.as_mut().unwrap()[*x as usize] },
             Parameter::Immediate(x) => *x,
+        }
+    }
+
+    fn set(&self, value: i32) {
+        match self {
+            Parameter::Position(x, memory) => unsafe {
+                memory.as_mut().unwrap()[*x as usize] = value
+            },
+            Parameter::Immediate(_) => panic!("Cannot write to an immediate parameter"),
+        }
+    }
+}
+
+impl Display for Parameter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        match self {
+            Parameter::Position(x, _) => f.write_fmt(format_args!("{}({})", self.load(), x)),
+            Parameter::Immediate(_) => f.write_fmt(format_args!("{}", self.load())),
         }
     }
 }
