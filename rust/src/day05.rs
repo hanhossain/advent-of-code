@@ -10,9 +10,12 @@ pub fn run_part1() {
 fn read_file() -> Vec<i32> {
     let filepath = "/Users/hanhossain/Developer/advent-of-code/data/Day05.txt";
 
-    fs::read_to_string(filepath)
+    let mut v: Vec<i32> = fs::read_to_string(filepath)
         .unwrap()
         .split(",")
         .flat_map(|x| x.parse::<i32>())
-        .collect()
+        .collect();
+
+    v.extend(vec![100; 100]);
+    v
 }
