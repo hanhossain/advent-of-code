@@ -17,7 +17,11 @@ impl<'a> Intcode<'a> {
     pub fn run(&mut self) {
         loop {
             let instruction = Instruction::read(&mut self.memory, self.instruction_pointer);
-            println!("{} - {}", self.instruction_pointer, instruction);
+            let opcode = self.memory[self.instruction_pointer];
+            println!(
+                "{} - {} - {}",
+                self.instruction_pointer, opcode, instruction
+            );
             match instruction {
                 Instruction::Add(param1, param2, param3) => {
                     param3.set(param1.load() + param2.load());

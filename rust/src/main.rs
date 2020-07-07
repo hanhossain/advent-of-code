@@ -8,5 +8,5 @@ mod day05;
 mod vm;
 
 fn main() {
-    day05::run_part1();
+    day05::run();
 }
