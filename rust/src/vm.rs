@@ -1,4 +1,4 @@
-use std::fmt::{Display, Error, Formatter};
+use std::fmt::{Debug, Error, Formatter};
 use std::io;
 
 pub struct Intcode<'a> {
@@ -17,11 +17,14 @@ impl<'a> Intcode<'a> {
     pub fn run(&mut self) {
         loop {
             let instruction = Instruction::read(&mut self.memory, self.instruction_pointer);
-            let opcode = self.memory[self.instruction_pointer];
-            println!(
-                "{} - {} - {}",
-                self.instruction_pointer, opcode, instruction
-            );
+
+            // uncomment when debugging
+            // let opcode = self.memory[self.instruction_pointer];
+            // println!(
+            //     "{} - {} - {:?}",
+            //     self.instruction_pointer, opcode, instruction
+            // );
+
             match instruction {
                 Instruction::Add(param1, param2, param3) => {
                     param3.set(param1.load() + param2.load());
@@ -152,21 +155,27 @@ impl Instruction {
     }
 }
 
-impl Display for Instruction {
+impl Debug for Instruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match self {
-            Instruction::Add(x, y, z) => f.write_fmt(format_args!("Add {} {} {}", x, y, z)),
+            Instruction::Add(x, y, z) => f.write_fmt(format_args!("Add {:?} {:?} {:?}", x, y, z)),
             Instruction::Multiply(x, y, z) => {
-                f.write_fmt(format_args!("Multiply {} {} {}", x, y, z))
+                f.write_fmt(format_args!("Multiply {:?} {:?} {:?}", x, y, z))
             }
-            Instruction::Input(x) => f.write_fmt(format_args!("Input {}", x)),
-            Instruction::Output(x) => f.write_fmt(format_args!("Output {}", x)),
-            Instruction::JumpIfTrue(x, y) => f.write_fmt(format_args!("JumpIfTrue {} {}", x, y)),
-            Instruction::JumpIfFalse(x, y) => f.write_fmt(format_args!("JumpIfFalse {} {}", x, y)),
+            Instruction::Input(x) => f.write_fmt(format_args!("Input {:?}", x)),
+            Instruction::Output(x) => f.write_fmt(format_args!("Output {:?}", x)),
+            Instruction::JumpIfTrue(x, y) => {
+                f.write_fmt(format_args!("JumpIfTrue {:?} {:?}", x, y))
+            }
+            Instruction::JumpIfFalse(x, y) => {
+                f.write_fmt(format_args!("JumpIfFalse {:?} {:?}", x, y))
+            }
             Instruction::LessThan(x, y, z) => {
-                f.write_fmt(format_args!("LessThan {} {} {}", x, y, z))
+                f.write_fmt(format_args!("LessThan {:?} {:?} {:?}", x, y, z))
             }
-            Instruction::Equals(x, y, z) => f.write_fmt(format_args!("Equals {} {} {}", x, y, z)),
+            Instruction::Equals(x, y, z) => {
+                f.write_fmt(format_args!("Equals {:?} {:?} {:?}", x, y, z))
+            }
             Instruction::Halt => f.write_str("Halt"),
         }
     }
@@ -224,7 +233,7 @@ impl Parameter {
     }
 }
 
-impl Display for Parameter {
+impl Debug for Parameter {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match self {
             Parameter::Position(x, _) => f.write_fmt(format_args!("{}({})", self.load(), x)),
