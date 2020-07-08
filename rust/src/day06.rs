@@ -1,6 +1,7 @@
+use std::collections::{HashMap, HashSet};
 use std::fs;
 
-pub fn run() {
+pub fn run_part1() {
     let raw =
         fs::read_to_string("/Users/hanhossain/Developer/advent-of-code/data/Day06.txt").unwrap();
     let tree = Tree::parse(&raw);
@@ -9,94 +10,103 @@ pub fn run() {
     println!("Total orbits: {}", total_orbits);
 }
 
-#[derive(Debug)]
+pub fn run_part2() {
+    let raw =
+        fs::read_to_string("/Users/hanhossain/Developer/advent-of-code/data/Day06.txt").unwrap();
+    let tree = Tree::parse(&raw);
+
+    let transfers = tree.orbital_transfers("YOU", "SAN");
+    println!("Orbital transfers: {}", transfers);
+}
+
+#[derive(Debug, Eq, PartialEq)]
 struct Node {
     id: String,
-    orbits: i32,
-    children: Vec<Box<Node>>,
+    parent: Option<String>,
+    children: Vec<String>,
 }
 
 impl Node {
-    fn new(id: String, orbits: i32) -> Self {
+    fn new(id: String) -> Self {
         Self {
-            children: vec![],
-            orbits,
             id,
+            parent: None,
+            children: Vec::new(),
         }
-    }
-
-    fn search_children(&mut self, id: &str) -> Option<&mut Box<Self>> {
-        for child in &mut self.children {
-            if child.id == id {
-                return Some(child);
-            }
-            if let Some(x) = child.search_children(id) {
-                return Some(x);
-            }
-        }
-
-        None
-    }
-
-    fn total_orbits(&self) -> i32 {
-        let mut orbits = self.orbits;
-
-        for child in &self.children {
-            orbits += child.total_orbits();
-        }
-
-        orbits
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 struct Tree {
-    root: Box<Node>,
+    nodes: HashMap<String, Node>,
 }
 
 impl Tree {
     fn parse(data: &str) -> Self {
-        let mut line_iterator = data.lines();
+        let mut tree = Self {
+            nodes: HashMap::new(),
+        };
 
-        let first_line = line_iterator.next().unwrap();
-        let mut iterator = first_line.trim().split(")");
-        let planet = iterator.next().unwrap();
-        let satellite = iterator.next().unwrap().to_owned();
-        let mut root = Box::new(Node::new(planet.to_owned(), 0));
-        let satellite = Box::new(Node::new(satellite, root.orbits + 1));
-        root.children.push(satellite);
+        for line in data.lines().map(|x| x.trim()) {
+            let mut iterator = line.split(")");
+            let planet_id = iterator.next().unwrap();
+            let satellite = iterator.next().unwrap();
 
-        for line in line_iterator {
-            let mut iterator = line.trim().split(")");
-            let planet = iterator.next().unwrap();
-            let satellite = iterator.next().unwrap().to_owned();
+            tree.ensure_planet_exists(planet_id);
+            tree.ensure_planet_exists(satellite);
 
-            let planet = if root.id == planet {
-                &mut root
-            } else {
-                root.search_children(planet)
-                    .expect(&format!("couldn't find planet {}", planet))
-            };
+            let planet = tree.nodes.get_mut(planet_id).unwrap();
+            planet.children.push(satellite.to_owned());
 
-            let satellite = Box::new(Node::new(satellite, planet.orbits + 1));
-            planet.children.push(satellite);
+            let satellite = tree.nodes.get_mut(satellite).unwrap();
+            satellite.parent = Some(planet_id.to_owned());
         }
 
-        Self { root }
+        tree
     }
 
-    fn search(&mut self, id: &str) -> &mut Box<Node> {
-        if self.root.id == id {
-            return &mut self.root;
+    fn ensure_planet_exists(&mut self, id: &str) {
+        if !self.nodes.contains_key(id) {
+            let planet = Node::new(id.to_owned());
+            self.nodes.insert(id.to_owned(), planet);
         }
-
-        self.root
-            .search_children(id)
-            .expect(&format!("couldn't find the node {}", id))
     }
 
     fn total_orbits(&self) -> i32 {
-        self.root.total_orbits()
+        let mut total = 0;
+        let mut nodes = vec![(self.nodes.get("COM").unwrap(), 0)];
+
+        // basically a DFS
+        while let Some((node, orbits)) = nodes.pop() {
+            for child in &node.children {
+                let child = self.nodes.get(child).unwrap();
+                nodes.push((child, orbits + 1));
+            }
+
+            total += orbits;
+        }
+
+        total
+    }
+
+    fn path(&self, id: &str) -> Vec<String> {
+        let mut path = Vec::new();
+
+        let mut node = self.nodes.get(id).unwrap();
+        while let Some(parent) = &node.parent {
+            path.push(parent.to_owned());
+            node = self.nodes.get(parent).unwrap();
+        }
+
+        path
+    }
+
+    fn orbital_transfers(&self, source: &str, destination: &str) -> usize {
+        let you: HashSet<String> = self.path(source).into_iter().collect();
+        let san: HashSet<String> = self.path(destination).into_iter().collect();
+        you.symmetric_difference(&san)
+            .collect::<HashSet<&String>>()
+            .len()
     }
 }
 
@@ -116,17 +126,52 @@ E)J
 J)K
 K)L"#;
 
+    const DATA2: &str = r#"COM)B
+B)C
+C)D
+D)E
+E)F
+B)G
+G)H
+D)I
+E)J
+J)K
+K)L
+K)YOU
+I)SAN"#;
+
     #[test]
     fn test_parse_single_satellite() {
         let tree = Tree::parse("COM)B");
+        println!("{:#?}", tree);
 
-        assert_eq!(tree.root.id, "COM");
-        assert_eq!(tree.root.children[0].id, "B");
+        let mut expected: HashMap<String, Node> = HashMap::new();
+        expected.insert(
+            "COM".to_owned(),
+            Node {
+                id: "COM".to_owned(),
+                parent: None,
+                children: vec!["B".to_owned()],
+            },
+        );
+
+        expected.insert(
+            "B".to_owned(),
+            Node {
+                id: "B".to_owned(),
+                parent: Some("COM".to_owned()),
+                children: vec![],
+            },
+        );
+
+        let expected = Tree { nodes: expected };
+        assert_eq!(tree, expected);
     }
 
     #[test]
     fn test_parse_multiple_satellites() {
-        let _tree = Tree::parse(DATA);
+        let tree = Tree::parse(DATA);
+        println!("{:#?}", tree);
     }
 
     #[test]
@@ -134,5 +179,13 @@ K)L"#;
         let tree = Tree::parse(DATA);
 
         assert_eq!(tree.total_orbits(), 42);
+    }
+
+    #[test]
+    fn test_orbital_transfers() {
+        let tree = Tree::parse(DATA2);
+        let transfers = tree.orbital_transfers("YOU", "SAN");
+
+        assert_eq!(transfers, 4);
     }
 }
