@@ -7,13 +7,6 @@ pub fn run_part1() {
 }
 
 pub fn run_part2() {
-    // for (noun, verb) in (0..100).zip(0..100) {
-    //     if run(noun, verb) == 19690720 {
-    //         let result = 100 * noun + verb;
-    //         println!("{}", result);
-    //         break;
-    //     }
-    // }
     for noun in 0..100 {
         for verb in 0..100 {
             if run(noun, verb) == 19690720 {
