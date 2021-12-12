@@ -1,21 +1,15 @@
 use std::collections::{HashMap, HashSet};
-use std::fs;
+
+const DATA: &str = include_str!("../../data/year2019/day03.txt");
 
 pub fn run_part1() {
-    let raw = read_file();
-    let distance = calculate_distance(&raw);
+    let distance = calculate_distance(DATA);
     println!("Distance: {}", distance);
 }
 
 pub fn run_part2() {
-    let raw = read_file();
-    let signal_delay = calculate_signal_delay(&raw);
+    let signal_delay = calculate_signal_delay(DATA);
     println!("Signal delay: {}", signal_delay);
-}
-
-fn read_file() -> String {
-    let filepath = "/Users/hanhossain/Developer/advent-of-code/data/Day03.txt";
-    fs::read_to_string(filepath).unwrap()
 }
 
 fn parse(s: &str) -> Vec<Trail> {

@@ -1,19 +1,16 @@
 use std::collections::{HashMap, HashSet};
-use std::fs;
+
+const DATA: &str = include_str!("../../data/year2019/day06.txt");
 
 pub fn run_part1() {
-    let raw =
-        fs::read_to_string("/Users/hanhossain/Developer/advent-of-code/data/Day06.txt").unwrap();
-    let tree = Tree::parse(&raw);
+    let tree = Tree::parse(DATA);
 
     let total_orbits = tree.total_orbits();
     println!("Total orbits: {}", total_orbits);
 }
 
 pub fn run_part2() {
-    let raw =
-        fs::read_to_string("/Users/hanhossain/Developer/advent-of-code/data/Day06.txt").unwrap();
-    let tree = Tree::parse(&raw);
+    let tree = Tree::parse(DATA);
 
     let transfers = tree.orbital_transfers("YOU", "SAN");
     println!("Orbital transfers: {}", transfers);

@@ -1,5 +1,6 @@
 use crate::year2019::vm::Intcode;
-use std::fs;
+
+const DATA: &str = include_str!("../../data/year2019/day05.txt");
 
 pub fn run() {
     let mut memory = read_file();
@@ -8,11 +9,7 @@ pub fn run() {
 }
 
 fn read_file() -> Vec<i32> {
-    let filepath = "/Users/hanhossain/Developer/advent-of-code/data/Day05.txt";
-
-    fs::read_to_string(filepath)
-        .unwrap()
-        .split(",")
+    DATA.split(",")
         .flat_map(|x| x.trim().parse::<i32>())
         .collect()
 }

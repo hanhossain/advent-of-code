@@ -21,7 +21,7 @@ pub fn run_part2() {
 }
 
 fn read_file() -> Flatten<Lines<BufReader<File>>> {
-    let filepath = "/Users/hanhossain/Developer/advent-of-code/data/Day01.txt";
+    let filepath = "/Users/hanhossain/Developer/advent-of-code/rust/data/year2019/day01.txt";
 
     let file = File::open(filepath).unwrap();
     BufReader::new(file).lines().flatten()
