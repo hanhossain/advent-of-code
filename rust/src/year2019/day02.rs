@@ -1,4 +1,4 @@
-use crate::vm::Intcode;
+use crate::year2019::vm::Intcode;
 use std::fs;
 
 pub fn run_part1() {
