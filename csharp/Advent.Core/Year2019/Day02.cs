@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 
-namespace Advent.Core
+namespace Advent.Core.Year2019
 {
     public class Day02
     {

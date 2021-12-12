@@ -1,5 +1,6 @@
 using System.Linq;
 using Advent.Core;
+using Advent.Core.Year2019;
 using Xunit;
 
 namespace Advent.Tests

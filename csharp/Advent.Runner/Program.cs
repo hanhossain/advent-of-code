@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using Advent.Core;
+using Advent.Core.Year2019;
 
 namespace Advent.Runner
 {
@@ -14,19 +15,19 @@ namespace Advent.Runner
 
         private static void Day01Part1()
         {
-            var totalFuel = File.ReadLines("Data/Day01.txt").Select(x => Day01.GetFuelRequirements(int.Parse(x))).Sum();
+            var totalFuel = File.ReadLines("Data/Year2019/Day01.txt").Select(x => Day01.GetFuelRequirements(int.Parse(x))).Sum();
             Console.WriteLine(totalFuel);
         }
 
         private static void Day01Part2()
         {
-            var totalFuel = File.ReadLines("Data/Day01.txt").Select(x => Day01.GetFuelRequirementsForFuel(int.Parse(x))).Sum();
+            var totalFuel = File.ReadLines("Data/Year2019/Day01.txt").Select(x => Day01.GetFuelRequirementsForFuel(int.Parse(x))).Sum();
             Console.WriteLine(totalFuel);
         }
 
         private static void Day02Part1()
         {
-            var program = File.ReadAllText("Data/Day02.txt").Split(",").Select(x => int.Parse(x)).ToArray();
+            var program = File.ReadAllText("Data/Year2019/Day02.txt").Split(",").Select(x => int.Parse(x)).ToArray();
             program[1] = 12;
             program[2] = 2;
             Day02.RunIntcodeProgram(program);
@@ -35,7 +36,7 @@ namespace Advent.Runner
 
         private static void Day02Part2()
         {
-            var code = File.ReadAllText("Data/Day02.txt");
+            var code = File.ReadAllText("Data/Year2019/Day02.txt");
             
             for (int noun = 0; noun < 100; noun++)
             {
