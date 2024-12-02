@@ -1,9 +1,17 @@
+use std::collections::HashMap;
+
 const DATA: &str = include_str!("../../data/year2024/day01.txt");
 
 pub fn run_part1() {
     let input = parse_data(DATA);
     let distance = get_total_distance(input);
     println!("Total distance: {}", distance);
+}
+
+pub fn run_part2() {
+    let input = parse_data(DATA);
+    let similarity_score = get_similarity_score(input);
+    println!("Similarity score: {}", similarity_score);
 }
 
 fn parse_data(data: &str) -> (Vec<usize>, Vec<usize>) {
@@ -29,6 +37,21 @@ fn get_total_distance(mut input: (Vec<usize>, Vec<usize>)) -> usize {
     a.sum::<usize>()
 }
 
+fn get_similarity_score(input: (Vec<usize>, Vec<usize>)) -> usize {
+    let left = count_instances(&input.0);
+    let right = count_instances(&input.1);
+    left.into_iter()
+        .map(|(k, v)| k * v * right.get(&k).unwrap_or(&0))
+        .sum()
+}
+
+fn count_instances(input: &Vec<usize>) -> HashMap<usize, usize> {
+    input.iter().fold(HashMap::new(), |mut acc, &x| {
+        *acc.entry(x).or_insert(0) += 1;
+        acc
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -52,5 +75,12 @@ mod tests {
         let input = parse_data(TEST_DATA);
         let distance = get_total_distance(input);
         assert_eq!(distance, 11);
+    }
+
+    #[test]
+    fn test_get_similarity_score() {
+        let input = parse_data(TEST_DATA);
+        let similarity_score = get_similarity_score(input);
+        assert_eq!(similarity_score, 31);
     }
 }
