@@ -1,3 +1,3 @@
 fn main() {
-    aoc::year2022::day04::run_part2();
+    aoc::year2024::day01::run_part1();
 }
